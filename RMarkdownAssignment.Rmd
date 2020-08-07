@@ -1,0 +1,15 @@
+
+# R Markdown Assignment
+*Yusuf ISIK* *7 August 2020*
+
+In 2019, I graduated from Istanbul Technical University (ITU). Currently working at ITU as Teaching Assistant. I become interested in the areas of Data Mining and Business Intelligence in the last year of my undergraduate education while writing down graduation thesis. Now I would like to be more qualified in Data Analysis. 
+
+[LinkedIn](https://www.linkedin.com/in/isikyusuf/)
+
+# UseR! 2020 
+I would like to mention one of the videos in the channel which has longer videos than previous year. In the talk, six people from different backgrounds(diversified) introduced themselves and described their relations with R. One of the story of them was outstanding. An Argentinian woman living in a rural area in Argentina and has no easy access to center of the city. She then started teaching Spanish and with that financing she was able to enroll master degree in Data Mining. 
+
+# Title for first article
+# Title for second article
+# Title for third article
+
