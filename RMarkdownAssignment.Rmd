@@ -9,6 +9,7 @@ In 2019, I graduated from Istanbul Technical University (ITU). Currently working
 # UseR! 2020 
 I would like to mention one of the videos in the channel which has longer videos than previous year. In the talk, six people from different backgrounds(diversified) introduced themselves and described their relations with R. One of the story of them was outstanding. An Argentinian woman living in a rural area in Argentina and has no easy access to center of the city. She then started teaching Spanish and with that financing she was able to enroll master degree in Data Mining. 
 [Supporting diversity in the R community (R forwards panel)](https://www.youtube.com/watch?v=gDO1OphmF5Q)
+
 # Doing Journalism with R (B. Witzenberger)
 Is it possible to do Journalism with R? In this video the lecturer tells how they are doing it. 
 He describes data journalism as story telling with data in a fast changing data driven world. 
