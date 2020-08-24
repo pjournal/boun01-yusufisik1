@@ -8,22 +8,127 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## R Markdown
+## Loading Libraries and Data
+Firstly we are importing required libraries and loading data from local file. We use *em_price* for naming raw data.  
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r, echo= TRUE, results='hide', message=FALSE}
+library(tidyverse) 
+library(lubridate)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+em_price <- read.csv("ptf-smf.csv") 
+glimpse(em_price)
+Sys.setenv(TZ="Europe/London") # for date-time adjustments. 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## dyplyr 
+As you can see here, data have 6 variables two of them are "characters" while others are numeric. Since Date column in the dataframe is not a date time object, it is not appropriate to use it with filter function and other date calculations. In order to convert that we use;
+
+``` {r}
+em_price$Date <- parse_date_time(em_price$Date, orders = c( "dmyHM", "mdyHM"))
+
+```
+
+Now it is a date-time object;
+
+```{r}
+class(em_price$Date)
+```
+I would like to use the weekdays as "Monday", "Tuesday", "Wednesday" etc. so create another column that holds the days of week; 
+
+```{r}
+em_price <- em_price %>% mutate(day_name = weekdays(as.Date(em_price$Date)))
+```
+
+## Price Analysis and Info Extraction
+
+The data can be organized in a way that a person who is not familiar the concept of electricity pricing can easily understand. One might wonder what is the average price according to days and because there is a correlation between electricity prices and usage she might want to know difference between weekdays and the weekend. For that, we grouping the data and taking means of hourly prices by days. 
+
+```{r, echo=TRUE, message=FALSE}
+em_price_dh2 <- em_price %>% select(Date, MCP., SMP., day_name) %>%
+  group_by(hour = lubridate ::hour(Date), day_name) %>% summarise(mcp_hrly_price = mean(MCP.))
+
+```
+
+```{r}
+em_price_dh2
+```
+
+## Line Graph
+In this graph, tracking of changes in price is available; 
+
+```{r}
+graph_1<-ggplot(em_price_dh2, aes(x=hour, y=mcp_hrly_price, group=day_name)) +
+  geom_line(aes(color=day_name))+
+  geom_point(aes(color=day_name))
+
+graph_1 <- graph_1 + labs(x="Hours of the Day", y="Price", color="Days", title = "MCP Hourly Averages by Days", subtitle = " 1-31 July 2020")
+
+graph_1
+```
+
+
+Sunday is clearly out of trend. But suprisingly, Saturday is not distinguished from other days since most firms in Turkey works on Saturday. 
+
+Another column in dataframe is "SMP.Direction" which indicates balance of demand and supply. From that information, a seller firm can calculate its losses(cost of wrong prediction). A simple formulation can be implemented to dataframe to extract the loss: when energy-surplus occur firm sells electricity from lower price, on the contrary energy-deficit requires to buy electricity from higher price. In-balance situation, firms sells or buys electricity from right price but its an ideal case and rarely occurs. Piece of code: 
+```{r}
+unique(em_price$SMP.Direction) # which components exist?
+```
+
+Now we are creating new column "Unit_Loss". 
+
+```{r}
+graph_df <- em_price %>% transmute(Date, MCP. , SMP.,             unit_loss = case_when(SMP.Direction == "?Energy Surplus" ~ (MCP. - Positive.Imbalance.Price..TL.MWh.),
+SMP.Direction == "? Energy Deficit" ~ (Negative.Imbalance.Price..TL.MWh. - MCP.), SMP.Direction == "? In Balance" ~ 0 ))
+
+graph_2<- graph_df %>% pivot_longer(.,-Date) %>% ggplot(., aes(x=Date, y=value, color=name)) + geom_line() 
+
+graph_2 <- graph_2 + labs(x="Time Line", y="Price", color="Variables", title = "Price Changes and Unit Loss", subtitle = " 1-31 July 2020")
+
+graph_2
+```
+
+To see clearly, we can select one-week period: 
+
+```{r}
+graph_3<- graph_df %>% filter(Date >= "2020-07-01" & Date <= "2020-07-07")%>% pivot_longer(.,-Date) %>% ggplot(., aes(x=Date, y=value, color=name)) + geom_line() 
+
+graph_3 <- graph_3 + labs(x="Time Line", y="Price", color="Variables", title = "Price Changes and Unit Loss", subtitle = " 1-7 July 2020")
+
+graph_3
+```
+
+Another question can be "what is the percentage of Balance_State?" : 
+
+```{r}
+gdata_percentage <- data.frame(em_price$SMP.Direction)
+
+pie_chart <- ggplot(gdata_percentage) + geom_bar(mapping = aes(x = "", fill=em_price.SMP.Direction ), width = 1) + coord_polar("y") + 
+  theme_void() # remove background, grid, numeric labels
+
+pie_chart <- pie_chart + labs(x="Balance State", color="Balance State", title = "Percentage of State", subtitle = " 1-31 July 2020")
+pie_chart
+```
+
+We might compare the hourly values of SMP and MCP with the help of scatter plot. First we make some arrangements in the data: 
+
+```{r, message=FALSE}
+graph_df1 <- em_price %>% select(Date, MCP., SMP., day_name) %>%
+  group_by(hour = lubridate ::hour(Date), day_name) %>% summarise(mcp_hrly_price = mean(MCP.), smp_hrly_price = mean(SMP.))
+graph_df1 <- data.frame(graph_df1)
+```
+
+```{r}
+sc_plot <- ggplot(graph_df1) + geom_point(aes(x = mcp_hrly_price, y = smp_hrly_price, color=as.character(hour)))
+
+sc_plot <- sc_plot + labs(x="Hourly MCP Price", y="Hourly SMP Price", color="Hours", title = "MCP vs SMP Hourly averages")
+
+sc_plot
+```
+
+
+
+
+
