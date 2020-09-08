@@ -2,7 +2,7 @@
 
 + IE48A 2020 Boun Summer Term
 
-
+[Progress Journal Link ]( https://pjournal.github.io/boun01-yusufisik1/ )
 
 
 
