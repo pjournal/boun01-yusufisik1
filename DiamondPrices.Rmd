@@ -18,6 +18,8 @@ library(vtreat)
 library(GGally)
 library(gridExtra)
 library(tidyverse)
+library(randomForest)
+library(Metrics)
 
 ```
 
@@ -106,28 +108,41 @@ Then if we take log of price it seems more straight and suitable for regression:
 model2 <- lm(I(log(price)) ~ ., data = diamonds_train[1:10])
 summary(model2)
 ```
+Lastly we try another model including random forest method: 
+
+```{r}
+model3 <-  randomForest(
+    price ~ .,
+    data= diamonds_train[-11]
+  )
+summary(model3)
+```
+
+
 ## Evaluation of Models
 
 ```{r}
+test_df <- diamonds_test %>% select(-diamond_id) # To match the model dimension which we obtained without diamond_id
+pred1 = predict(model1, newdata=test_df[-7])
+rmse1 <- rmse(test_df$price, pred1) 
+rmse1
 
-new_testdf <- diamonds_test %>% select(-price,-diamond_id)
-train_pred= predict(model1) 
-test_pred=  predict(model1, new=new_testdf) 
-   
+pred2 = predict(model2, newdata=test_df[-7]) 
+rmse2 <- rmse(test_df$price, pred2) 
+rmse2
 
+pred3 = predict(model3, newdata=test_df[-7]) 
+rmse3 <- rmse(test_df$price, pred3) 
+rmse3
 ```
-```{r}
 
-diamonds_test2 <- diamonds_test %>% select(-price,-diamond_id)
-train_pred= predict(model2) 
-test_pred2=  predict(model2, new=diamonds_test2) 
-   
-
-```
+According to the results, model3 is the most successful with the lowest rmse value = 561.9 We can use in order to predict diamond prices with model3.  
 
 ## References
-https://bradleyboehmke.github.io/HOML/linear-regression.html
-https://rstudio-pubs-static.s3.amazonaws.com/211979_60432c2480574f419f646c9834768a77.html
-https://www.kaggle.com/erikbruin/house-prices-lasso-xgboost-and-a-detailed-eda
-
+- https://bradleyboehmke.github.io/HOML/linear-regression.html
+- https://rstudio-pubs-static.s3.amazonaws.com/211979_60432c2480574f419f646c9834768a77.html
+- https://www.kaggle.com/erikbruin/house-prices-lasso-xgboost-and-a-detailed-eda
+- https://cran.r-project.org/web/packages/randomForest/randomForest.pdf
+- https://www.statology.org/how-to-calculate-rmse-in-r/
+- https://towardsdatascience.com/random-forest-in-r-f66adf80ec9
 
