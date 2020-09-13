@@ -1,0 +1,133 @@
+---
+title: "Diamond_prices"
+output: 
+  html_document:
+  toc: true
+  toc_depth: 3
+  code_folding: hide
+date: "9/10/2020"
+---
+
+## Introduction
+Diamond prices is can be predicted according to its specifications such as carat, cut, color and clarity. Since x-y-z variables mostly defines carat they might be behaving as the same way as carat did. We can observe the correlation of each variable with price on the ggpairs plot. Some of the variables are categorical, in order to see the effect them on price can be seen after converting them into numeric variables. But plotting them as color identity in carat-price plot may give some clue about their behavior. 
+
+## Loading Libraries and Data
+```{r message=FALSE, warning=FALSE, echo=TRUE}
+
+library(vtreat)
+library(GGally)
+library(gridExtra)
+library(tidyverse)
+
+```
+
+```{r}
+
+set.seed(503)
+
+diamonds_test <- diamonds %>% mutate(diamond_id = row_number()) %>% 
+    group_by(cut, color, clarity) %>% sample_frac(0.2) %>% ungroup()
+
+diamonds_train <- anti_join(diamonds %>% mutate(diamond_id = row_number()), 
+    diamonds_test, by = "diamond_id")
+
+```
+
+## Overview and Exploratory Data Analysis
+Lets have a look at train data: 
+```{r}
+glimpse(diamonds_train)
+summary(diamonds_train)
+
+```
+
+```{r message=FALSE, warning=FALSE, echo=TRUE}
+diamonds_train %>% summarise_all(funs(sum(is.na(.)))) # is there any na values? 
+```
+There is no missing values in the data. 
+### Exploring distribution of variables
+Since there are many variables, I will use the scatter plot matrix to get a quick and easy view of the distribution and correlation of different variables.
+
+In order to keep it simple first investigate quantitative variables. 
+
+```{r}
+ggpairs(diamonds_train, columns = c(1,5,6,7),  aes(alpha =0.5), title = 'Quantitative Variables vs Price')
+```
+```{r}
+ggpairs(diamonds_train, columns = c(2,3,4,7,8,9,10),  aes(alpha =0.5),title = 'Qualitative Variables vs Price')
+```
+
+Now we will take a detailed look at some of the relationships. I will use scaling for Price.
+
+
+```{r}
+
+p1 <- ggplot(diamonds_train, aes(x = carat, y = price, color = cut)) + 
+    geom_point(alpha = 0.3) + scale_y_sqrt()
+p2 <- ggplot(diamonds_train, aes(x = carat, y = price, color = color)) + geom_point(alpha = 0.3) + scale_y_sqrt() #to see how it doing with square root. 
+p3 <- ggplot(diamonds_train, aes(x = carat, y = price, color = clarity)) + geom_point(alpha = 0.3) + scale_y_sqrt() 
+p4 <- ggplot(diamonds_train, aes(x = x, y = price, color = color)) + geom_point(alpha = 0.3) + scale_y_sqrt()
+p5 <- ggplot(diamonds_train, aes(x = y, y = price, color = color)) + geom_point(alpha = 0.3) + scale_y_sqrt() 
+p6 <- ggplot(diamonds_train, aes(x = z, y = price, color = color)) + geom_point(alpha = 0.3) + scale_y_sqrt()
+grid.arrange(p1, p2, p3, p4, p5, p6, nrow= 3, ncol = 2)
+```
+First we look the price and carat relationship since it has most correlation. While doing this we add cut variable as color argument in the plot and take the root of price. 
+```{r}
+p1 <- ggplot(diamonds_train, aes(x = carat, y = price, color=cut)) + 
+    geom_point(alpha = 0.3) + scale_y_sqrt()
+p1
+```
+
+
+- While cut is increasing fair to ideal price is changing according that manner. In the first plot we can observe that upper part of shape is colored with yellow which represents ideal cut.
+ 
+```{r}
+p2 <- ggplot(diamonds_train, aes(x = carat, y = price, color = color)) + geom_point(alpha = 0.3) + scale_y_sqrt() #to see how it doing with square root.
+p2
+```
+
+- Similarly, color is another determinant of price since D and E color codes placed in upper parts of the second plot. Likewise, clarity is effecting the price in a parallel way. 
+```{r}
+p3 <- ggplot(diamonds_train, aes(x = carat, y = price, color = clarity)) + geom_point(alpha = 0.3) + scale_y_sqrt()
+p3
+p4 <- ggplot(diamonds_train, aes(x = x, y = price, color = color)) + geom_point(alpha = 0.3) + scale_y_sqrt()
+p4
+```
+
+## Models
+Firstly we try default value of price in model1: 
+```{r carat-price}
+model1 <- lm(price ~ ., data=diamonds_train[1:10])
+
+summary(model1)
+```
+Then if we take log of price it seems more straight and suitable for regression: 
+```{r}
+model2 <- lm(I(log(price)) ~ ., data = diamonds_train[1:10])
+summary(model2)
+```
+## Evaluation of Models
+
+```{r}
+
+new_testdf <- diamonds_test %>% select(-price,-diamond_id)
+train_pred= predict(model1) 
+test_pred=  predict(model1, new=new_testdf) 
+   
+
+```
+```{r}
+
+diamonds_test2 <- diamonds_test %>% select(-price,-diamond_id)
+train_pred= predict(model2) 
+test_pred2=  predict(model2, new=diamonds_test2) 
+   
+
+```
+
+## References
+https://bradleyboehmke.github.io/HOML/linear-regression.html
+https://rstudio-pubs-static.s3.amazonaws.com/211979_60432c2480574f419f646c9834768a77.html
+https://www.kaggle.com/erikbruin/house-prices-lasso-xgboost-and-a-detailed-eda
+
+
